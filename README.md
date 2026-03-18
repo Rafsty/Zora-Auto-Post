@@ -93,5 +93,3 @@ Berisi utilitas `fullpage_screenshot.py` plus `ca.txt` dan `screenshots/`. READM
 2. Posting coin/token - jalankan `post.py` menggunakan daftar pada `mail.txt`. Jangan lupa siapkan `info.txt`, gambar, dan folder output cookies.
 3. Dokumentasi - pindah ke folder `cek/` dan jalankan `python fullpage_screenshot.py --input ca.txt` untuk mengambil screenshot tiap contract (sesuaikan `ca.txt` dari `info_post.txt`).
 4. Validasi manual - gunakan `mc.py` jika ingin memastikan flow login masih sesuai setelah ada perubahan UI Zora.
-
-Dengan README ini seluruh skrip di root maupun di `cek/` sudah terdokumentasi dalam Bahasa Indonesia dan siap dipublikasikan di GitHub.
