@@ -1,78 +1,101 @@
-# Cek - Batch Screenshot Coin Zora
+# Toolkit Automasi Zora
 
-`fullpage_screenshot.py` adalah utilitas Python yang memanfaatkan Playwright untuk mengambil screenshot penuh halaman coin Zora (`https://zora.co/coin/base:{contract}`) secara massal. Daftar contract diambil dari `ca.txt`, sehingga Anda bisa mengotomatisasi dokumentasi kampanye atau audit tanpa membuka halaman satu per satu.
+Repositori ini berada di `C:\Users\AXIOO\Zora` dan berisi kumpulan skrip Playwright/Requests untuk membuat akun Zora, memposting token ERC-20/coin, mengelola kredensial Mail.tm, serta mengambil screenshot bukti publikasi. Dokumen ini melengkapi README khusus folder `cek/` agar seluruh aset siap dipublikasikan ke GitHub.
 
-## Isi Folder
-- `fullpage_screenshot.py` - skrip utama yang memuat parser input dan logika pengambilan screenshot.
-- `ca.txt` - contoh daftar email|ticker|contract; baris bertanda `-` pada kolom contract otomatis dilewati.
-- `screenshots/` - direktori keluaran; akan dibuat otomatis bila belum ada.
+## Prasyarat Umum
+1. **Python 3.10+** (disarankan via virtual environment).
+2. Paket Python: `playwright`, `requests`, `faker`, `colorama` (plus dependensi standar).
+3. Browser Playwright Chromium (`playwright install chromium`).
+4. Akses internet, serta akun/proxy sesuai kebutuhan skrip.
+5. Folder `avatars/` berisi gambar `.png/.jpg/.webp` untuk unggah profil.
 
-## Fitur Utama
-- Validasi format `email|ticker|contract` beserta dukungan komentar diawali `#`.
-- Sanitasi nama file agar aman untuk semua sistem operasi dan menyertakan nomor urut (`001_TICKER.png`).
-- Parameter CLI untuk viewport, timeout, dan jeda setelah halaman dimuat, sehingga mudah di-tune sesuai kecepatan jaringan.
-- Penanganan error eksplisit (mis. contract kosong, halaman timeout) agar mudah menindaklanjuti.
-
-## Prasyarat
-- Python 3.10+ (disarankan menggunakan virtual environment terpisah).
-- Paket Python: `playwright`.
-- Browser Playwright Chromium (diinstal lewat `playwright install chromium`).
-- Akses internet untuk memuat halaman Zora.
-
-## Instalasi Cepat
-1. `cd cek`
-2. `python -m venv .venv`
-3. `.venv\Scripts\activate` (Windows) atau `source .venv/bin/activate` (macOS/Linux).
-4. `pip install --upgrade pip playwright`
-5. `playwright install chromium`
-
-## Format `ca.txt`
-Setiap baris wajib mengikuti pola `email|ticker|contract`. Baris kosong, baris komentar (`# ...`), atau contract yang kosong/bernilai `-` akan otomatis di-skip.
-
-```
-ip7lags7fx@dollicons.com|IRANVSISRAEL 1|0x8684eb2709106ab0f8f4b4f9d6ffc53270335845
-c44o610oxk@dollicons.com|IRANVSISRAEL 1|0xe6d90d8b0efefaa195eb3aa3d41a6de8a320e4aa
-# Contoh baris yang akan dilewati karena contract kosong
-6qghl71g7s@dollicons.com|IRANVSISRAEL 1|-
-```
-
-Tips:
-- Gunakan ticker pendek agar nama file tidak terlalu panjang; skrip akan mengganti karakter non-alfanumerik dengan `_`.
-- Anda bisa memecah daftar besar menjadi beberapa file input dan menjalankan skrip terpisah bila ingin paralel.
-
-## Cara Menjalankan
-Jalankan perintah berikut dari dalam folder `cek` (virtual environment opsional tetapi disarankan):
-
+Contoh setup cepat:
 ```powershell
-python fullpage_screenshot.py `
-  --input ca.txt `
-  --output-dir screenshots `
-  --viewport 1366x768 `
-  --timeout 45000 `
-  --wait-after-load 7000
+cd C:\Users\AXIOO\Zora
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install --upgrade pip playwright requests faker colorama
+playwright install chromium
 ```
 
-Tanpa argumen tambahan, skrip otomatis membaca `ca.txt`, menulis ke `screenshots/`, menggunakan viewport `1280x720`, timeout 30000 ms, dan jeda 5000 ms.
+## Struktur Direktori Singkat
+- `post.py` - otomasi posting coin/token Zora banyak akun + ekspor cookies.
+- `regist.py` - generator akun baru berbasis Mail.tm dengan dukungan proxy list/sistem/manual.
+- `pw.py` - versi ringan pembuatan akun tanpa pengaturan proxy rumit; cocok untuk batch kecil.
+- `mc.py` - demo otomatisasi login dan aksi dasar (OTP, Start trading, buka chat) untuk satu akun list.
+- `mailtm.py` - helper API Mail.tm (buat akun, login, baca OTP) yang dipakai skrip lain.
+- `mail.txt` / `Mail.txt` - penyimpanan daftar `email|password` (case berbeda tapi di Windows dianggap sama).
+- `info.txt` - override judul/ticker awal untuk `post.py` (format `key=value`).
+- `info_post.txt` - log hasil posting (`email|ticker|contract`).
+- `proxies.txt` - daftar proxy `ip:port` atau `ip:port:user:pass` untuk `regist.py`.
+- `avatars/` - stok avatar yang dipilih acak saat registrasi.
+- `cek/` - utilitas screenshot massal coin (lihat `cek/README.md` untuk detail lengkap).
 
-## Parameter CLI
-| Flag | Default | Keterangan |
-| --- | --- | --- |
-| `--input` | `ca.txt` | Jalur file sumber daftar contract. |
-| `--output-dir` | `screenshots` | Folder tujuan penyimpanan PNG. Dibuat otomatis bila belum ada. |
-| `--viewport` | `1280x720` | Ukuran viewport `WIDTHxHEIGHT`. Gunakan resolusi lebih tinggi bila ingin detail tambahan. |
-| `--timeout` | `30000` | Batas waktu (ms) menunggu halaman Zora selesai dimuat (`networkidle`). |
-| `--wait-after-load` | `5000` | Jeda ekstra (ms) sebelum screenshot; berguna bila halaman punya animasi atau data lambat. |
+## Penjelasan Skrip Utama
+### `post.py`
+Otomatisasi lengkap proses pembuatan coin/token di zora.co untuk banyak akun:
+- Membaca daftar akun dari `mail.txt` (bisa batasi via `--start-index` dan `--max-accounts`).
+- Mendukung login-only (ekspor cookies ke JSON) atau lanjut sampai token terbit.
+- Bisa upload gambar (`--image`) atau memakai mode generate otomatis.
+- Mengambil OTP dari Mail.tm via API, auto-fill form, menangani popup, klik tombol `View post`, dan mengekstrak contract address.
+- Mencatat hasil ke `info_post.txt` serta menyimpan cookies (`--cookies-out`).
+- Mengambil override `ticker`/`title`/`ticker_group_start` dari `info.txt` dan prompt interaktif awal.
 
-## Output
-- Setiap contract valid menghasilkan file PNG full-page di folder output.
-- Nama file mengikuti pola `NNN_<ticker>.png` sehingga urutan input tetap terlihat.
-- Jika halaman gagal dimuat, Playwright mengangkat `PlaywrightTimeoutError` dan proses berhenti; perbaiki koneksi atau tingkatkan `--timeout`.
+Contoh penggunaan:
+```powershell
+python post.py `
+  --mail-file mail.txt `
+  --cookies-out cookies.json `
+  --image elite.png `
+  --title "ELITE GLOBAL" `
+  --ticker "ELITE GLOBAL" `
+  --max-accounts 3
+```
+Tip: Jika ingin nama file cookies per akun, cukup beri `--cookies-out cookies.json` sehingga skrip otomatis menambahkan suffix `_1`, `_2`, dst.
 
-## Troubleshooting
-- **`Halaman tidak selesai dimuat`**: tingkatkan `--timeout` dan `--wait-after-load`, pastikan koneksi stabil, dan coba ulangi daftar yang gagal.
-- **`File input tidak ditemukan`**: pastikan menjalankan skrip dari folder yang benar atau gunakan jalur absolut lewat `--input`.
-- **`python: command not found`**: gunakan `py` di Windows (`py fullpage_screenshot.py`) atau pastikan virtual environment aktif.
+### `regist.py`
+Generator akun asinkron dengan fleksibilitas proxy:
+- Menanyakan jumlah akun, sumber proxy (list `proxies.txt`, proxy sistem Windows, atau input manual), dan mengatur Mail.tm agar mengikuti proxy yang sama.
+- Memakai Playwright headless untuk membuka URL undangan (`INVITE_URL`), login via email, menangkap OTP Mail.tm, upload avatar acak, generate username unik, mengisi display name, menyelesaikan proses `Create account -> Finish -> Activate`.
+- Menyimpan setiap pasangan `email|password` ke `Mail.txt` agar dapat digunakan `post.py`/`mc.py`.
+- Bila menggunakan proxy list, setiap akun membuka instance browser baru dengan proxy berbeda; fallback otomatis jika sebuah proxy gagal mengambil domain Mail.tm.
 
-## Pengembangan
-- Script hanya bergantung pada Playwright; jika ingin menambah fitur (misal menyimpan log CSV), gunakan fungsi `parse_lines` dan `take_screenshots` yang sudah modular.
-- Tambahkan pengujian cepat dengan menjalankan `python -m compileall fullpage_screenshot.py` untuk memastikan tidak ada error sintaks sebelum push.
+Jalankan:
+```powershell
+python regist.py
+```
+Ikuti prompt untuk memilih sumber proxy (y/n) dan jumlah akun.
+
+### `pw.py`
+Varian lebih sederhana bila tidak butuh pengaturan proxy:
+- Selalu menggunakan Chromium non-headless agar mudah dipantau.
+- Membuat email Mail.tm baru, menangkap OTP, upload avatar acak, memvalidasi username, dan menyimpan akun ke `Mail.txt`.
+- Cocok untuk pengecekan manual atau batch kecil sebelum menjalankan `regist.py`.
+
+### `mc.py`
+Skrip "macro" satu akun untuk memverifikasi alur login:
+- Mengambil akun pertama dari `mail.txt`, login via OTP, klik tombol `Start trading`, membuka profil dan chat.
+- Dapat membantu debugging perubahan UI karena menjalankan langkah demi langkah dengan log jelas dan `expect()`.
+
+### `mailtm.py`
+Library kecil agar kode lain tidak perlu mengulang logika Mail.tm:
+- `get_available_domains()`, `create_random_mailtm_account()`, `login_mailtm()`, `check_inbox_mailtm()`.
+- `set_mailtm_proxy()` memungkinkan `regist.py` mengganti proxy Requests agar konsisten dengan Playwright.
+
+### `cek/`
+Berisi utilitas `fullpage_screenshot.py` plus `ca.txt` dan `screenshots/`. README khusus sudah ada di `cek/README.md` (bahasa Indonesia) sehingga folder ini siap dipush sebagai bukti visual setiap contract.
+
+## File Konfigurasi dan Data
+- `mail.txt` / `Mail.txt`: satu email per baris, format `email|password`. Pastikan huruf kecil/besar konsisten jika repo dijalankan di Linux/macOS.
+- `info.txt`: isi opsi seperti `title=ELITE GLOBAL`, `ticker=ELITE GLOBAL`, `ticker_group_start=2` untuk override default `post.py`.
+- `info_post.txt`: output otomatis, jangan dihapus jika ingin riwayat contract.
+- `proxies.txt`: gunakan format `ip:port:user:pass` atau `http://user:pass@host:port`. Baris `#` diabaikan.
+- `avatars/`: letakkan beberapa avatar agar `regist.py`/`pw.py` bisa memilih acak.
+
+## Alur Kerja yang Disarankan
+1. Generate akun - pakai `regist.py` (dengan proxy) atau `pw.py` (tanpa proxy) sampai `Mail.txt` terisi.
+2. Posting coin/token - jalankan `post.py` menggunakan daftar pada `mail.txt`. Jangan lupa siapkan `info.txt`, gambar, dan folder output cookies.
+3. Dokumentasi - pindah ke folder `cek/` dan jalankan `python fullpage_screenshot.py --input ca.txt` untuk mengambil screenshot tiap contract (sesuaikan `ca.txt` dari `info_post.txt`).
+4. Validasi manual - gunakan `mc.py` jika ingin memastikan flow login masih sesuai setelah ada perubahan UI Zora.
+
+Dengan README ini seluruh skrip di root maupun di `cek/` sudah terdokumentasi dalam Bahasa Indonesia dan siap dipublikasikan di GitHub.
