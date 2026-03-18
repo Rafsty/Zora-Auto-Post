@@ -1,7 +1,3 @@
-# Toolkit Automasi Zora
-
-Repositori ini berada di `C:\Users\AXIOO\Zora` dan berisi kumpulan skrip Playwright/Requests untuk membuat akun Zora, memposting token ERC-20/coin, mengelola kredensial Mail.tm, serta mengambil screenshot bukti publikasi. Dokumen ini melengkapi README khusus folder `cek/` agar seluruh aset siap dipublikasikan ke GitHub.
-
 ## Prasyarat Umum
 1. **Python 3.10+** (disarankan via virtual environment).
 2. Paket Python: `playwright`, `requests`, `faker`, `colorama` (plus dependensi standar).
